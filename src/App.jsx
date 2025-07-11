@@ -1,85 +1,71 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 function App() {
+  const [customer, setCustomer] = useState("");
+  const [item, setItem] = useState("");
+  const [price, setPrice] = useState("");
   const [bills, setBills] = useState([]);
-  const [form, setForm] = useState({ customer: '', item: '', price: '' });
+  const invoiceRef = useRef();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // Load saved bills
+  useEffect(() => {
+    const saved = localStorage.getItem("bills");
+    if (saved) {
+      setBills(JSON.parse(saved));
+    }
+  }, []);
+
+  // Save whenever bills change
+  useEffect(() => {
+    localStorage.setItem("bills", JSON.stringify(bills));
+  }, [bills]);
 
   const addBill = () => {
-    if (form.customer && form.item && form.price) {
-      setBills([...bills, { ...form, price: parseFloat(form.price) }]);
-      setForm({ customer: '', item: '', price: '' });
+    if (customer && item && price) {
+      setBills([...bills, { customer, item, price: parseFloat(price) }]);
+      setCustomer("");
+      setItem("");
+      setPrice("");
     }
   };
 
-  const getTotal = () =>
-    bills.reduce((total, bill) => total + bill.price, 0);
+  const deleteBill = (i) => {
+    const copy = [...bills];
+    copy.splice(i, 1);
+    setBills(copy);
+  };
 
-  const resetBills = () => setBills([]);
+  const reset = () => {
+    setBills([]);
+    localStorage.removeItem("bills");
+  };
+
+  const total = bills.reduce((sum, b) => sum + b.price, 0);
+
+  const printInvoice = () => {
+    const printContent = invoiceRef.current.innerHTML;
+    const win = window.open("", "Print Invoice", "width=600,height=600");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Growora Invoice</title>
+          <style>
+            body { font-family: sans-serif; padding: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            h2 { text-align: center; }
+          </style>
+        </head>
+        <body>${printContent}</body>
+      </html>
+    `);
+    win.document.close();
+    win.print();
+  };
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
-      <h1>🧾 Growora Billing Software</h1>
+    <div style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: "600px", margin: "auto" }}>
+      <h1>🧾 Growora Billing</h1>
 
-      <div style={{ marginBottom: '1rem' }}>
-        <input
-          type="text"
-          name="customer"
-          placeholder="Customer Name"
-          value={form.customer}
-          onChange={handleChange}
-          style={{ marginRight: '0.5rem' }}
-        />
-        <input
-          type="text"
-          name="item"
-          placeholder="Item"
-          value={form.item}
-          onChange={handleChange}
-          style={{ marginRight: '0.5rem' }}
-        />
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          value={form.price}
-          onChange={handleChange}
-          style={{ marginRight: '0.5rem' }}
-        />
-        <button onClick={addBill}>Add Bill</button>
-      </div>
-
-      <table border="1" cellPadding="8" style={{ width: '100%' }}>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Customer</th>
-            <th>Item</th>
-            <th>Price (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {bills.map((bill, index) => (
-            <tr key={index}>
-              <td>{index + 1}</td>
-              <td>{bill.customer}</td>
-              <td>{bill.item}</td>
-              <td>{bill.price.toFixed(2)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <h3 style={{ marginTop: '1rem' }}>Total: ₹{getTotal().toFixed(2)}</h3>
-
-      <button onClick={resetBills} style={{ marginTop: '1rem' }}>Reset</button>
-    </div>
-  );
-}
-
-export default App;
-
+      <input placeholder="Customer" value={customer} onChange={(e) => setCustomer(e.target.value)}
 
